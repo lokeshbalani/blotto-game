@@ -32,23 +32,43 @@ class Blotto:
         self.n_soldiers = int(n_sol)
         self.n_battlefields = int(n_battles)
         self.train_data = None
-        self.dataset = self.random_strategy_set(1000)
+        self.r_dataset = self.random_strategy_set(1000)
+        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv", "./dataset/castle-solutions-2.csv"])
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
         print("--------------------------------")
-        print("Dataset")
+        print("Random Generated Dataset")
+        print("--------------------------------")
+        for i in range(len(self.r_dataset)):
+            print("Strategy #{} : {}".format(i + 1, self.r_dataset[i]))
+
+        print("--------------------------------")
+        print("Five Thirty Eight Dataset")
         print("--------------------------------")
         for i in range(len(self.dataset)):
             print("Strategy #{} : {}".format(i + 1, self.dataset[i]))
 
 
-    def prepare_dataset(self):
-        return "Preparing Dataset"
+    def prepare_dataset(self, dir_list):
+        dataset = []
+
+        for path in dir_list:
+            for line in self.read_dataset(path):
+                sol = [int(float(item)) for item in line.split(",")]
+                if sum(sol) == self.n_soldiers:
+                    dataset.append(sol)
+
+        return dataset
 
     # Reads in the given file and creates a list of betting selections from the data
     def read_dataset(self, dataset_path):
-        return "dataset"
+        data = []
+        with open(dataset_path, "r", encoding="utf-8") as file:
+            for line in file.readlines()[1:]:
+                data.append(line)
+
+        return data
 
     # Create a single random integer-valued strategy that sums to 
     # No of soldiers with length equal to number of battlefields
@@ -89,6 +109,7 @@ class Blotto:
                 strategy_set.append(strategy)
 
         return strategy_set
+
 
 
 
