@@ -110,6 +110,65 @@ class Blotto:
 
         return strategy_set
 
+    def player_scores(self, player1_strat, player2_strat):
+        # Determine which player wins each battlefield. If each player has 
+        # attacked with the same number of soldiers, battlefield is won by
+        # neither
+
+        p1_score = 0
+        p2_score = 0
+
+        # Assign scores
+        for i in range(0, self.n_battlefields):
+            if player1_strat[i] > player2_strat[i]:
+                p1_score += (i + 1)
+            elif player2_strat[i] > player1_strat[i]:
+                p2_score += (i + 1)
+
+        return (p1_score, p2_score)
+
+    def pl_strategy_stats(self, pl_strategy, dataset):
+        # Claculates wins losses and ties that a strategy achieves
+        # when comapred against every selection in dataset
+        #
+        # Params:
+        #   strategy : the strategy to compare
+        #   dataset : pruned subset of valide strategy space for the game
+        # Returns:  
+        #   tuple : (no_of_wins, no_of_ties, no_of_losses)
+        # 
+
+        n_wins = 0
+        n_losses = 0
+        n_ties = 0
+
+        for strat in dataset:
+            pl_strategy_score, strat_score = self.player_scores(pl_strategy, strat)
+
+            # Determine if given player strategy wins, draws, or loses
+            if pl_strategy_score > strat_score:
+                n_wins += 1
+            elif pl_strategy_score < strat_score:
+                n_losses += 1
+            else:
+                n_ties += 1
+
+        return (n_wins, n_ties, n_losses)
+
+    def calc_final_score(self, strategy_stats):
+        # Score-calculating function that
+        # assigns appropriate score 
+        # (5pts for a win, 2 for a tie, 0 for a loss)
+        # 
+        # Params:
+        #   strategy_stats : tuple (no_of_wins, no_of_ties, no_of_losses)
+        # Return:
+        #   number : score for the strategy
+
+        return 3 * strategy_stats[0] + 2 * strategy_stats[1]
+
+
+
 
 
 
