@@ -9,7 +9,7 @@ Engineering Tasks
 -[Completed] Read the downloaded dataset
 -[Completed] Create a Random dataset based on the inputs of the user
 - Augment the random dataset by subtle manipulations
-- Create the functions to calculate the score
+-[Completed] Create the functions to calculate the score
 - Initialise an intelligent bot
 - Make to bot to learn to generate a winning strategy
     - Use evolutionary theory to generate winning strategy
