@@ -36,8 +36,7 @@ class Blotto:
         self.n_battlefields = int(n_bfs)
         self.train_data = None
         self.r_dataset = self.random_strategy_set(1000)
-        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv",
-                                             "./dataset/castle-solutions-2.csv"])
+        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv", "./dataset/castle-solutions-2.csv"])
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
@@ -54,15 +53,14 @@ class Blotto:
             print("Strategy #{} : {}".format(i + 1, self.dataset[i]))
 
 
-    def prepare_dataset(self, dir_list):
+    def prepare_dataset(self,
+                        dir_list):
         dataset = []
-
         for path in dir_list:
             for line in self.read_dataset(path):
                 sol = [int(float(item)) for item in line.split(",")]
                 if sum(sol) == self.n_soldiers:
                     dataset.append(sol)
-
         return dataset
 
     # Reads in the given file and creates a list of betting selections from the data
@@ -72,7 +70,6 @@ class Blotto:
         with open(dataset_path, "r", encoding="utf-8") as file:
             for line in file.readlines()[1:]:
                 data.append(line)
-
         return data
 
     # Create a single random integer-valued strategy that sums to 
@@ -81,7 +78,7 @@ class Blotto:
         # Create a random resource variable
         res = self.n_soldiers
 
-        # Empty list
+        # Empty list for list of strategies
         strategy = []
 
         for i in range(self.n_battlefields - 1):
@@ -96,23 +93,20 @@ class Blotto:
         # Add any remaining reserves at the last
         strategy.append(res)
 
-        # Shuffle the strategy
-        random.shuffle(strategy)
+        # Validate the strategies
+        assert sum(strategy) == self.n_soldiers
 
+        # Shuffle the strategies and return
+        random.shuffle(strategy)
         return strategy
 
-    def random_strategy_set(self, n_strategies):
-        # Empty list
+    def random_strategy_set(self,
+                            n_strategies):
+        # Empty list for storing list of strategies
         strategy_set = []
-        strategy = []
-
         # Keep going until we put n_strategies in strategy set
         while len(strategy_set) < n_strategies:
-            strategy = self.random_strategy()
-
-            if sum(strategy)  == self.n_soldiers:
-                strategy_set.append(strategy)
-
+            strategy_set.append(self.random_strategy())
         return strategy_set
 
     def player_scores(self,
@@ -121,7 +115,6 @@ class Blotto:
         # Determine which player wins each battlefield. If each player has 
         # attacked with the same number of soldiers, battlefield is won by
         # neither
-
         p1_score = 0
         p2_score = 0
 
@@ -131,7 +124,6 @@ class Blotto:
                 p1_score += (i + 1)
             elif player2_strategy[i] > player1_strategy[i]:
                 p2_score += (i + 1)
-
         return p1_score, p2_score
 
     def pl_strategy_stats(self,
@@ -145,8 +137,7 @@ class Blotto:
         #   dataset : pruned subset of valid strategy space for the game
         # Returns:  
         #   tuple : (no_of_wins, no_of_ties, no_of_losses)
-        # 
-
+        #
         n_wins = 0
         n_losses = 0
         n_ties = 0
@@ -154,7 +145,6 @@ class Blotto:
         for strategy in dataset:
             pl_strategy_score, strategy_score = self.player_scores(pl_strategy,
                                                                    strategy)
-
             # Determine if given player strategy wins, draws, or loses
             if pl_strategy_score > strategy_score:
                 n_wins += 1
@@ -162,7 +152,6 @@ class Blotto:
                 n_losses += 1
             else:
                 n_ties += 1
-
         return n_wins, n_ties, n_losses
 
     @staticmethod
@@ -174,7 +163,6 @@ class Blotto:
         #   strategy_stats : tuple (no_of_wins, no_of_ties, no_of_losses)
         # Return:
         #   number : score for the strategy
-
         return 3 * strategy_stats[0] + 2 * strategy_stats[1]
 
 
