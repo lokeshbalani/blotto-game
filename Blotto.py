@@ -1,6 +1,6 @@
 # Authors: Lokesh Balani, Aditya Saripalli, 2018
 #
-# A simultor for a Weighted Colonel Blotto game that is played as follows:
+# A simulator for a Weighted Colonel Blotto game that is played as follows:
 #
 # We are given battlefields labelled 1-n, and we say that the battlefield's
 # label is its value. Two players present attack strategies given
@@ -26,14 +26,18 @@
 import random
 import os
 
+
 class Blotto:
-    def __init__(self, n_sol, n_battles):
-        '''Set the number of soldiers available and the number of battlefields'''
+    def __init__(self,
+                 n_sol,
+                 n_bfs):
+        """ Set the number of soldiers available and the number of battlefields """
         self.n_soldiers = int(n_sol)
-        self.n_battlefields = int(n_battles)
+        self.n_battlefields = int(n_bfs)
         self.train_data = None
         self.r_dataset = self.random_strategy_set(1000)
-        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv", "./dataset/castle-solutions-2.csv"])
+        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv",
+                                             "./dataset/castle-solutions-2.csv"])
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
@@ -62,7 +66,8 @@ class Blotto:
         return dataset
 
     # Reads in the given file and creates a list of betting selections from the data
-    def read_dataset(self, dataset_path):
+    @staticmethod
+    def read_dataset(dataset_path):
         data = []
         with open(dataset_path, "r", encoding="utf-8") as file:
             for line in file.readlines()[1:]:
@@ -76,7 +81,7 @@ class Blotto:
         # Create a random resource variable
         res = self.n_soldiers
 
-        #Empty list
+        # Empty list
         strategy = []
 
         for i in range(self.n_battlefields - 1):
@@ -97,11 +102,11 @@ class Blotto:
         return strategy
 
     def random_strategy_set(self, n_strategies):
-        #Empty list
+        # Empty list
         strategy_set = []
         strategy = []
 
-        #Keep going until we put n_strategies in strategy set
+        # Keep going until we put n_strategies in strategy set
         while len(strategy_set) < n_strategies:
             strategy = self.random_strategy()
 
@@ -110,7 +115,9 @@ class Blotto:
 
         return strategy_set
 
-    def player_scores(self, player1_strat, player2_strat):
+    def player_scores(self,
+                      player1_strategy,
+                      player2_strategy):
         # Determine which player wins each battlefield. If each player has 
         # attacked with the same number of soldiers, battlefield is won by
         # neither
@@ -120,20 +127,22 @@ class Blotto:
 
         # Assign scores
         for i in range(0, self.n_battlefields):
-            if player1_strat[i] > player2_strat[i]:
+            if player1_strategy[i] > player2_strategy[i]:
                 p1_score += (i + 1)
-            elif player2_strat[i] > player1_strat[i]:
+            elif player2_strategy[i] > player1_strategy[i]:
                 p2_score += (i + 1)
 
-        return (p1_score, p2_score)
+        return p1_score, p2_score
 
-    def pl_strategy_stats(self, pl_strategy, dataset):
-        # Claculates wins losses and ties that a strategy achieves
-        # when comapred against every selection in dataset
+    def pl_strategy_stats(self,
+                          pl_strategy,
+                          dataset):
+        # Calculates wins losses and ties that a strategy achieves
+        # when compared against every selection in dataset
         #
         # Params:
         #   strategy : the strategy to compare
-        #   dataset : pruned subset of valide strategy space for the game
+        #   dataset : pruned subset of valid strategy space for the game
         # Returns:  
         #   tuple : (no_of_wins, no_of_ties, no_of_losses)
         # 
@@ -142,22 +151,23 @@ class Blotto:
         n_losses = 0
         n_ties = 0
 
-        for strat in dataset:
-            pl_strategy_score, strat_score = self.player_scores(pl_strategy, strat)
+        for strategy in dataset:
+            pl_strategy_score, strategy_score = self.player_scores(pl_strategy,
+                                                                   strategy)
 
             # Determine if given player strategy wins, draws, or loses
-            if pl_strategy_score > strat_score:
+            if pl_strategy_score > strategy_score:
                 n_wins += 1
-            elif pl_strategy_score < strat_score:
+            elif pl_strategy_score < strategy_score:
                 n_losses += 1
             else:
                 n_ties += 1
 
-        return (n_wins, n_ties, n_losses)
+        return n_wins, n_ties, n_losses
 
-    def calc_final_score(self, strategy_stats):
-        # Score-calculating function that
-        # assigns appropriate score 
+    @staticmethod
+    def calc_final_score(strategy_stats):
+        # Score-calculating function that assigns appropriate score
         # (5pts for a win, 2 for a tie, 0 for a loss)
         # 
         # Params:
@@ -166,9 +176,6 @@ class Blotto:
         #   number : score for the strategy
 
         return 3 * strategy_stats[0] + 2 * strategy_stats[1]
-
-
-
 
 
 
