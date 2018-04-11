@@ -36,7 +36,7 @@ class Blotto:
         self.n_battlefields = int(n_bfs)
         self.train_data = None
         self.r_dataset = self.random_strategy_set(1000)
-        self.dataset = self.prepare_dataset(["./dataset/castle-solutions.csv", "./dataset/castle-solutions-2.csv"])
+        self.dataset = self.prepare_dataset(["./dataset/bf_strategies_1.csv", "./dataset/bf_strategies_2.csv"])
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
