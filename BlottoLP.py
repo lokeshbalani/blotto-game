@@ -82,21 +82,38 @@ class BlottoLP:
         A = self.n_sol_attacker
         D = self.n_sol_defender
         B = self.n_battlefields
+        print(B)
 
         # Getting the troop deployment strategies
         A_strats = self.list_strat(A, B)
         n_A_strats = len(A_strats)
 
+        print(A_strats)
+
         D_strats = self.list_strat(D, B)
         n_D_strats = len(D_strats)
 
-        
-        
-        return None
+        print(D_strats)
 
-game_lp = BlottoLP(5, 6, 3)
-strats_atk = game_lp.list_strat(5,3)
-strats_def = game_lp.list_strat(6,3)
-print(strats_atk)
-print(strats_def)
+        # Zero Initialise the Game Matrix
+        gm_mtx = np.zeros([n_A_strats, n_D_strats])
+
+        for a_s_idx in range(n_A_strats):
+            for d_s_idx in range(n_D_strats):
+                # Reset and initialise the bases captured
+                bfs_win = 0
+
+                for a_b in range(B):
+                    for d_b in range(B):
+                        if A_strats[a_s_idx][a_b] > D_strats[d_s_idx][d_b]:
+                            bfs_win += 1
+
+                gm_mtx[a_s_idx][d_s_idx] = bfs_win / B
+        
+        return gm_mtx
+
+game_lp = BlottoLP(4,5,2)
+
+gm_mtx = game_lp.game_matrix()
+print(gm_mtx)
 
