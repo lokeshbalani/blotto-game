@@ -2,6 +2,7 @@ import random
 import math
 import numpy as np
 from operator import add
+from cvxopt import matrix, solvers
 
 class BlottoLP:
     def __init__(self, n_sol_atk, n_sol_def, n_bfs):
@@ -82,18 +83,17 @@ class BlottoLP:
         A = self.n_sol_attacker
         D = self.n_sol_defender
         B = self.n_battlefields
-        print(B)
 
         # Getting the troop deployment strategies
         A_strats = self.list_strat(A, B)
         n_A_strats = len(A_strats)
 
-        print(A_strats)
+        #print(A_strats)
 
         D_strats = self.list_strat(D, B)
         n_D_strats = len(D_strats)
 
-        print(D_strats)
+        #print(D_strats)
 
         # Zero Initialise the Game Matrix
         gm_mtx = np.zeros([n_A_strats, n_D_strats])
@@ -110,10 +110,105 @@ class BlottoLP:
 
                 gm_mtx[a_s_idx][d_s_idx] = bfs_win / B
         
-        return gm_mtx
+        return np.array(gm_mtx)
+
+    def lp_opt_sol(self, gm_mtx, solver="glpk"):
+        '''
+        Solves Linear Programs in the following form:
+
+        min_{x} f.T @ x
+        s.t     A @ x <= b
+                A_eq @ x = b_eq
+                lb <= x
+
+        This implies that for attacker:
+        x.T = [p1, p2, p3, ...., pm, v]
+        f.T = [0, 0, 0, ..., -1]
+        A = [[-g_{1,1}, ....., -g_{m,1}, 1]
+             [-g_{1,2}, ....., -g_{m,2}, 1]
+             ....
+             [-g_{1,n}, ....., -g_{m,n}, 1]]
+        A_eq = [1,1,....,1,0]
+        b_eq = 1
+        b.T = [0,0,...., 0]
+
+        This implies that for defender:
+        x.T = [q1, q2, q3, ...., qn, w]
+        f.T = [0, 0, 0, ..., 1]
+        A = [[g_{1,1}, ....., g_{m,1}, -1]
+             [g_{1,2}, ....., g_{m,2}, -1]
+             ....
+             [g_{1,n}, ....., g_{m,n}, -1]]
+        A_eq = [1,1,....,1,0]
+        b_eq = 1
+        b.T = [0,0,...., 0]
+        '''
+        m_mtx, n_mtx = gm_mtx.shape
+
+        '''Solving for Attacker'''
+        # f.T denoted as f
+        f_A = [0 for i in range(m_mtx)] + [-1]
+        f_A = np.array(f_A, dtype="float")
+        f_A = matrix(f_A)
+
+        # constraints A @ x <= b
+        A = np.matrix(gm_mtx, dtype="float").T # reformat each variable is in a row
+        print(A)
+        A *= -1 # minimization constraint
+        A = np.vstack([A, np.eye(m_mtx) * -1]) # > 0 constraint for all vars
+        new_col = [1 for i in range(m_mtx)] + [0 for i in range(m_mtx)]
+        A = np.insert(A, 0, new_col, axis=1) # insert utility column
+        A = matrix(A)
+
+        b_A = ([0 for i in range(m_mtx)] + [0 for i in range(m_mtx)])
+        b_A = np.array(b_A, dtype="float")
+        b_A = matrix(b_A)
+
+        # contraints A_eq @ x = b_eq
+        A_eq = [0] + [1 for i in range(m_mtx)]
+        A_eq = np.matrix(A_eq, dtype="float")
+        A_eq = matrix(A_eq)
+        b_A_eq = np.matrix(1, dtype="float")
+        b_A_eq = matrix(b_A_eq)
+
+        # solve the LP for Attacker
+        sol_A = solvers.lp(c=f_A, G=A, h=b_A, A=A_eq, b=b_A_eq, solver=solver)
+
+        '''Solving for defender'''
+        # f.T denoted as f
+        f_D = [0 for i in range(n_mtx)] + [1]
+        f_D = np.array(f_D, dtype="float")
+        f_D = matrix(f_D)
+
+        # constraints D @ x <= b
+        D = np.matrix(gm_mtx, dtype="float").T # reformat each variable is in a row
+        print(D)
+        D = np.vstack([D, np.eye(n_mtx) * 1]) # > 0 constraint for all vars
+        new_col = [1 for i in range(n_mtx)] + [0 for i in range(n_mtx)]
+        D = np.insert(D, 0, new_col, axis=1) # insert utility column
+        D = matrix(D)
+
+        b_D = ([0 for i in range(n_mtx)] + [0 for i in range(n_mtx)])
+        b_D = np.array(b_D, dtype="float")
+        b_D = matrix(b_D)
+
+        # contraints A_eq @ x = b_eq
+        D_eq = [0] + [1 for i in range(n_mtx)]
+        D_eq = np.matrix(D_eq, dtype="float")
+        D_eq = matrix(D_eq)
+        b_D_eq = np.matrix(1, dtype="float")
+        b_D_eq = matrix(b_D_eq)
+
+        # solve the LP for Attacker
+        sol_D = solvers.lp(c=f_D, G=A, h=b_D, A=D_eq, b=b_D_eq, solver=solver)
+
+        return sol_A
+
 
 game_lp = BlottoLP(4,5,2)
 
 gm_mtx = game_lp.game_matrix()
-print(gm_mtx)
+#print(gm_mtx)
+
+game_lp.lp_opt_sol(gm_mtx)
 
