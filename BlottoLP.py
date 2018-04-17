@@ -202,7 +202,7 @@ class BlottoLP:
         # solve the LP for Attacker
         sol_D = solvers.lp(c=f_D, G=A, h=b_D, A=D_eq, b=b_D_eq, solver=solver)
 
-        return sol_A
+        return sol_A, sol_D
 
 
 game_lp = BlottoLP(4,5,2)
