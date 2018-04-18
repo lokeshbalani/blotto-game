@@ -156,12 +156,9 @@ class BlottoLP:
         A = np.matrix(gm_mtx, dtype="float") # reformat each variable is in a row
         A = np.transpose(A)
         A *= -1 # minimization constraint
-        print(A)
         new_col = np.ones((n_mtx,1))
         A = np.hstack([A, new_col]) # insert utility column
-        print(A)
         A = np.vstack([A, np.eye(m_mtx + 1) * -1]) # > 0 constraint for all vars
-        print(A)
         #new_col = np.ones((n_mtx,1))
         #A = np.hstack([A, new_col]) # insert utility column
         A = matrix(A)
@@ -188,12 +185,9 @@ class BlottoLP:
 
         # constraints D @ x <= b
         D = np.matrix(gm_mtx, dtype="float") # reformat each variable is in a row
-        print(D)
         new_col = np.ones((m_mtx,1)) * -1
         D = np.hstack([D, new_col]) # insert utility column
-        print(D)
         D = np.vstack([D, np.eye(n_mtx + 1) * -1]) # > 0 constraint for all vars
-        print(D)
         D = matrix(D)
 
         b_D = [0 for i in range(m_mtx)] + [0 for i in range(n_mtx)] + [np.inf]
