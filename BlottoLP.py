@@ -143,6 +143,7 @@ class BlottoLP:
         b_eq = 1
         b.T = [0,0,...., 0]
         '''
+
         m_mtx, n_mtx = gm_mtx.shape
 
         '''Solving for Attacker'''
@@ -152,20 +153,25 @@ class BlottoLP:
         f_A = matrix(f_A)
 
         # constraints A @ x <= b
-        A = np.matrix(gm_mtx, dtype="float").T # reformat each variable is in a row
-        print(A)
+        A = np.matrix(gm_mtx, dtype="float") # reformat each variable is in a row
+        A = np.transpose(A)
         A *= -1 # minimization constraint
-        A = np.vstack([A, np.eye(m_mtx) * -1]) # > 0 constraint for all vars
-        new_col = [1 for i in range(m_mtx)] + [0 for i in range(m_mtx)]
-        A = np.insert(A, 0, new_col, axis=1) # insert utility column
+        print(A)
+        new_col = np.ones((n_mtx,1))
+        A = np.hstack([A, new_col]) # insert utility column
+        print(A)
+        A = np.vstack([A, np.eye(m_mtx + 1) * -1]) # > 0 constraint for all vars
+        print(A)
+        #new_col = np.ones((n_mtx,1))
+        #A = np.hstack([A, new_col]) # insert utility column
         A = matrix(A)
 
-        b_A = ([0 for i in range(m_mtx)] + [0 for i in range(m_mtx)])
+        b_A = [0 for i in range(n_mtx)] + [0 for i in range(m_mtx)] + [np.inf]
         b_A = np.array(b_A, dtype="float")
         b_A = matrix(b_A)
 
         # contraints A_eq @ x = b_eq
-        A_eq = [0] + [1 for i in range(m_mtx)]
+        A_eq = [1 for i in range(m_mtx)] + [0]
         A_eq = np.matrix(A_eq, dtype="float")
         A_eq = matrix(A_eq)
         b_A_eq = np.matrix(1, dtype="float")
@@ -181,34 +187,40 @@ class BlottoLP:
         f_D = matrix(f_D)
 
         # constraints D @ x <= b
-        D = np.matrix(gm_mtx, dtype="float").T # reformat each variable is in a row
+        D = np.matrix(gm_mtx, dtype="float") # reformat each variable is in a row
         print(D)
-        D = np.vstack([D, np.eye(n_mtx) * 1]) # > 0 constraint for all vars
-        new_col = [1 for i in range(n_mtx)] + [0 for i in range(n_mtx)]
-        D = np.insert(D, 0, new_col, axis=1) # insert utility column
+        new_col = np.ones((m_mtx,1)) * -1
+        D = np.hstack([D, new_col]) # insert utility column
+        print(D)
+        D = np.vstack([D, np.eye(n_mtx + 1) * -1]) # > 0 constraint for all vars
+        print(D)
         D = matrix(D)
 
-        b_D = ([0 for i in range(n_mtx)] + [0 for i in range(n_mtx)])
+        b_D = [0 for i in range(m_mtx)] + [0 for i in range(n_mtx)] + [np.inf]
         b_D = np.array(b_D, dtype="float")
         b_D = matrix(b_D)
 
         # contraints A_eq @ x = b_eq
-        D_eq = [0] + [1 for i in range(n_mtx)]
+        D_eq = [1 for i in range(n_mtx)] + [0]
         D_eq = np.matrix(D_eq, dtype="float")
         D_eq = matrix(D_eq)
         b_D_eq = np.matrix(1, dtype="float")
         b_D_eq = matrix(b_D_eq)
 
         # solve the LP for Attacker
-        sol_D = solvers.lp(c=f_D, G=A, h=b_D, A=D_eq, b=b_D_eq, solver=solver)
+        sol_D = solvers.lp(c=f_D, G=D, h=b_D, A=D_eq, b=b_D_eq, solver=solver)
 
         return sol_A, sol_D
 
 
-game_lp = BlottoLP(4,5,2)
+game_lp = BlottoLP(30,11,5)
 
 gm_mtx = game_lp.game_matrix()
 #print(gm_mtx)
 
-game_lp.lp_opt_sol(gm_mtx)
+opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
+print('Attacker Optimal')
+print(opt_A['x'])
+print('Defender Optimal')
+print(opt_D['x'])
 
