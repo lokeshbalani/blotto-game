@@ -9,6 +9,8 @@ class BlottoLP:
         self.n_sol_attacker = n_sol_atk
         self.n_sol_defender = n_sol_def
         self.n_battlefields = n_bfs
+        self.strat_space_A = None
+        self.strat_space_D = None
 
     def unique_depl_strats(self, depl_strat_list):
         '''Extract and return unique deplyment strategies'''
@@ -85,13 +87,13 @@ class BlottoLP:
         B = self.n_battlefields
 
         # Getting the troop deployment strategies
-        A_strats = self.list_strat(A, B)
-        n_A_strats = len(A_strats)
+        self.strat_space_A = self.list_strat(A, B)
+        n_A_strats = len(self.strat_space_A)
 
         #print(A_strats)
 
-        D_strats = self.list_strat(D, B)
-        n_D_strats = len(D_strats)
+        self.strat_space_D = self.list_strat(D, B)
+        n_D_strats = len(self.strat_space_D)
 
         #print(D_strats)
 
@@ -105,7 +107,7 @@ class BlottoLP:
 
                 for a_b in range(B):
                     for d_b in range(B):
-                        if A_strats[a_s_idx][a_b] > D_strats[d_s_idx][d_b]:
+                        if self.strat_space_A[a_s_idx][a_b] > self.strat_space_D[d_s_idx][d_b]:
                             bfs_win += 1
 
                 gm_mtx[a_s_idx][d_s_idx] = bfs_win / B
@@ -206,15 +208,45 @@ class BlottoLP:
 
         return sol_A, sol_D
 
+    def get_best_strats(self, strat_probs, n, plr_type='attacker'):
+        strat_probs = np.array(strat_probs).flatten()[:-1]
+        #print(strat_probs)
+        sorted_idx = np.argsort(strat_probs)
+        # Sorted in descending order
+        sorted_idx = sorted_idx[::-1]
+        #print(sorted_idx)
 
-game_lp = BlottoLP(30,11,5)
+        best_n_idx = sorted_idx[:n]
+        #print(best_n_idx)
+
+        if plr_type == 'attacker':
+            best_n_strat = np.array(self.strat_space_A)
+        else:
+            best_n_strat = np.array(self.strat_space_D)
+
+        best_n_strat = best_n_strat[best_n_idx]
+
+        return best_n_strat
+
+
+game_lp = BlottoLP(50,50,5)
 
 gm_mtx = game_lp.game_matrix()
 #print(gm_mtx)
 
 opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
-print('Attacker Optimal')
-print(opt_A['x'])
-print('Defender Optimal')
-print(opt_D['x'])
+# print('Attacker Optimal')
+# print(np.array(opt_A['x']).shape)
+# print(np.array(opt_A['x']).flatten().shape)
+# print(np.array(opt_A['x']).flatten()[:-1])
+# print('Defender Optimal')
+# print(opt_D['x'])
+
+print('Best 30 Strategies for Attacker')
+best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
+print(best_strats_A)
+
+print('Best 30 Strategies for Defender')
+best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
+print(best_strats_D)
 
