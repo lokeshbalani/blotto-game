@@ -3,6 +3,7 @@ import math
 import numpy as np
 from operator import add
 from cvxopt import matrix, solvers
+solvers.options['show_progress'] = 0
 
 class BlottoLP:
     def __init__(self, n_sol_atk, n_sol_def, n_bfs):
@@ -228,13 +229,112 @@ class BlottoLP:
 
         return best_n_strat
 
+    def get_payoff(self, lp_soln_A, lp_soln_D):
+        payoff = None
 
-game_lp = BlottoLP(50,50,5)
+        payoff_A = np.array(lp_soln_A).flatten()[-1]
+        payoff_D = np.array(lp_soln_D).flatten()[-1]
 
-gm_mtx = game_lp.game_matrix()
+        if payoff_A == payoff_D:
+            payoff = payoff_A
+        elif payoff_A > payoff_D:
+            payoff = payoff_A
+        else:
+            payoff = payoff_D
+
+        return payoff
+
+class BlottoPayoffTable:
+    def __init__(self):
+        self.min_n_sol_A = 1 
+        self.min_n_sol_D = 1 
+        self.min_n_bfs = 2 
+        self.max_n_sol_A = 30 
+        self.max_n_sol_D = 30 
+        self.max_n_bfs = 9
+
+    def gen_blotto_table(self):
+        '''
+        Create a 4-D array storing all the information
+        for the Colonel Blotto Game
+
+        For parameters:
+        A = number of Attacking Armies
+        D = number of Defending Armies
+        B = number of Bases
+
+        The information stored in the 
+        Blotto Table is as follows:
+        Blotto Table{A,D,B} = The payoff of the game
+
+        '''
+        bfs_mem_size = self.max_n_bfs + 1 - self.min_n_bfs
+        n_A_mem_size = self.max_n_sol_A + 1 - self.min_n_sol_A
+        n_D_mem_size = self.max_n_sol_D + 1 - self.min_n_sol_D
+
+        # Create Blotto Payoff Table for the ranges above
+        blotto_tbl = np.zeros([bfs_mem_size, n_A_mem_size, n_D_mem_size])
+
+        print(blotto_tbl.shape)
+
+        for bfs in range(0, bfs_mem_size):
+            n_bfs = bfs + self.min_n_bfs
+            print("Generating Blotto Payoff Table for {} bases, {} attackers, {} defenders.....".format(n_bfs, self.max_n_sol_A, self.max_n_sol_D))
+
+            for n_atk in range(0, n_A_mem_size):
+                for n_def in range(0, n_D_mem_size):
+                    game = BlottoLP(n_atk + 1, n_def + 1, n_bfs)
+                    gm_mtx = game.game_matrix()
+                    opt_A, opt_D = game.lp_opt_sol(gm_mtx)
+                    #blotto_tbl[n_atk, n_def, bfs, 0] = game.get_best_strats(opt_A['x'], 1, plr_type='attacker')
+                    #blotto_tbl[n_atk, n_def, bfs, 1] = game.get_best_strats(opt_D['x'], 1, plr_type='defender')
+                    blotto_tbl[bfs, n_atk, n_def] = game.get_payoff(opt_A['x'], opt_D['x'])
+
+            print("Blotto Payoff Table Populated for {} bases, {} attackers, {} defenders".format(n_bfs, self.max_n_sol_A, self.max_n_sol_D))
+
+        return blotto_tbl
+
+    def disp_payoff_table(self, payoff_mtx):
+        A_idx = [i for i in range(self.min_n_sol_A, self.max_n_sol_A + 1)]
+        D_idx = [i for i in range(self.min_n_sol_D, self.max_n_sol_D + 1)]
+
+        for bfs in range(self.max_n_bfs + 1 - self.min_n_bfs):
+            print("\n\n=================================")
+            print("Blotto Table for Battlefields = {}".format(bfs + self.min_n_bfs))
+            print("=================================\n\n")
+            payoff_tbl = payoff_mtx[bfs,:,:]
+
+            row_format_header = "{:>10}|" * (self.max_n_sol_D + 1)
+            row_format_u = "{:>10}+" * (self.max_n_sol_D + 1)
+            row_format_data = "{:>10}|" + "{:>10.6}|" * (self.max_n_sol_D)
+            print(row_format_header.format("A/D", *D_idx))
+            print(row_format_u.format(*(["-"*10]*(self.max_n_sol_D + 1))))
+            for a, row in zip(A_idx, payoff_tbl):
+                print(row_format_data.format(a, *row))
+                print(row_format_u.format(*(["-"*10]*(self.max_n_sol_D + 1))))
+
+    def save_mtx2csv(self, payoff_mtx):
+        A_idx = [str(i) for i in range(self.min_n_sol_A, self.max_n_sol_A + 1)]
+        D_idx = [str(i) for i in range(self.min_n_sol_D, self.max_n_sol_D + 1)]
+
+        for bfs in range(self.max_n_bfs + 1 - self.min_n_bfs):
+            out_report_fname = 'blotto_payoff_matrix_bfs_' + str(bfs + self.min_n_bfs) + '.csv'
+            payoff_tbl = payoff_mtx[bfs,:,:]
+
+            print("Writing to {}".format(out_report_fname))
+            with open(out_report_fname, 'w') as out_f:
+                out_f.write("{}\n".format(','.join(["A/D"] + D_idx)))
+                for a, row in zip(A_idx, payoff_tbl):
+                    row = [str(i) for i in row]
+                    out_f.write("{}\n".format(','.join([a] + row)))
+
+
+# game_lp = BlottoLP(50,50,5)
+
+# gm_mtx = game_lp.game_matrix()
 #print(gm_mtx)
 
-opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
+# opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
 # print('Attacker Optimal')
 # print(np.array(opt_A['x']).shape)
 # print(np.array(opt_A['x']).flatten().shape)
@@ -242,11 +342,18 @@ opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
 # print('Defender Optimal')
 # print(opt_D['x'])
 
-print('Best 30 Strategies for Attacker')
-best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
-print(best_strats_A)
+# print('Best 30 Strategies for Attacker')
+# best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
+# print(best_strats_A)
 
-print('Best 30 Strategies for Defender')
-best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
-print(best_strats_D)
+# print('Best 30 Strategies for Defender')
+# best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
+# print(best_strats_D)
+
+blotto_tbl = BlottoPayoffTable()
+payoff_mtx = blotto_tbl.gen_blotto_table()
+#blotto_tbl.disp_payoff_table(payoff_mtx)
+blotto_tbl.save_mtx2csv(payoff_mtx)
+
+
 
