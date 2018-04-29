@@ -364,7 +364,7 @@ class BlottoPayoffTable:
                     out_f.write("{}\n".format(','.join([a] + row)))
 
 
-game_lp = BlottoLP(100,100,5)
+game_lp = BlottoLP(100,100,3)
 
 gm_mtx = game_lp.game_matrix()
 #print(gm_mtx)
@@ -377,14 +377,15 @@ opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
 # print('Defender Optimal')
 # print(opt_D['x'])
 
-print('Best 30 Strategies for Attacker')
-best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
+#print('Best 30 Strategies for Attacker')
+#best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
 #game_lp.disp_best_n_strats(best_strats_A)
-game_lp.save_bestNstrats2csv(best_strats_A)
+#game_lp.save_bestNstrats2csv(best_strats_A)
 # print(best_strats_A)
 
-# print('Best 30 Strategies for Defender')
-# best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
+print('Best 30 Strategies for Defender')
+best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
+game_lp.save_bestNstrats2csv(best_strats_D, plr_type='defender')
 # print(best_strats_D)
 
 # blotto_tbl = BlottoPayoffTable()
