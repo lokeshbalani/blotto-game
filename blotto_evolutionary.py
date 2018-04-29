@@ -20,6 +20,7 @@
 
 import sys
 import random
+import csv
 import operator as op
 from collections import defaultdict
 from functools import reduce
@@ -223,6 +224,10 @@ class AttackerBot:
         # Player Strategies ranked by score
         ranked_strategies = self.get_scored_strategies()
 
+        l_sorted_strategies = []
+        for stg in ranked_strategies:
+            l_sorted_strategies.append(stg[0])
+
         # Populate a new generation of strategies
         self.player_strategies = []
 
@@ -245,12 +250,15 @@ class AttackerBot:
             mutant_strategy = self.mutate(ranked_strategies[k][0])
         # Add some additional random strategies, for variety in the next generation
         self.add_strategies(add_count)
-        return ranked_strategies
+        return l_sorted_strategies
 
 
     def attack(self):
         ranked_strategies = self.get_scored_strategies()
-        return ranked_strategies
+        l_sorted_strategies = []
+        for stg in ranked_strategies:
+            l_sorted_strategies.append(stg[0])
+        return l_sorted_strategies
 
 
 
@@ -277,7 +285,7 @@ print("\nCreating AttackerBot Object")
 n_learning_strategies = 60
 attacker_bot = AttackerBot(blotto_game, n_learning_strategies)
 
-l_s = []
+l_final_strategies = []
 epochs = 1000
 for j in range(epochs):
     if j % 100 == 0:
@@ -285,8 +293,13 @@ for j in range(epochs):
     if attacker_bot.get_strategies_count() >= n_total_strategies:
         break
     else:
-        l_s = attacker_bot.attack_add_update()
-l_s = attacker_bot.attack()
+        attacker_bot.attack_add_update()
+l_final_strategies = attacker_bot.attack()
 print("attacker:", attacker_bot.get_strategies_count(), "total:", n_total_strategies)
-for s in l_s: print(s)
+
+csv_file = "best_ev_strategies_100_100_3.csv"
+with open(csv_file, "w") as output:
+    writer = csv.writer(output, lineterminator='\n')
+    writer.writerows(l_final_strategies)
+
 
