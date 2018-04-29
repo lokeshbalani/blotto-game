@@ -217,7 +217,10 @@ class BlottoLP:
         sorted_idx = sorted_idx[::-1]
         #print(sorted_idx)
 
-        best_n_idx = sorted_idx[:n]
+        if n < len(sorted_idx):
+            best_n_idx = sorted_idx[:n]
+        else:
+            best_n_idx = sorted_idx[:n]
         #print(best_n_idx)
 
         if plr_type == 'attacker':
@@ -228,6 +231,38 @@ class BlottoLP:
         best_n_strat = best_n_strat[best_n_idx]
 
         return best_n_strat
+
+    def disp_best_n_strats(self, best_n_strats):
+        headers = ["Battlefield " + str(i) for i in range(1, self.n_battlefields + 1)]
+
+        print("\n\n======================================================================================")
+        print("Best Troop Deployment Strategies for {} Battlefields with {} Attackers and {} Defenders".format(self.n_battlefields, self.n_sol_attacker, self.n_sol_defender))
+        print("======================================================================================\n\n")
+
+        row_format_header = "{:>15}|" * (self.n_battlefields + 1)
+        row_format_u = "{:>15}+" * (self.n_battlefields + 1)
+        row_format_data = "{:>15}|" + "{:>15}|" * self.n_battlefields
+        print(row_format_header.format("", *headers))
+        print(row_format_u.format(*(["-"*15]*(self.n_battlefields + 1))))
+
+        for idx, strat in enumerate(best_n_strats):
+            print(row_format_data.format("Strategy " + str(idx + 1), *strat))
+            print(row_format_u.format(*(["-"*15]*(self.n_battlefields + 1))))
+
+    def save_bestNstrats2csv(self, best_n_strats, plr_type='attacker'):
+        headers = ["Battlefield " + str(i) for i in range(1, self.n_battlefields + 1)]
+
+        if plr_type == 'attacker':
+            out_report_fname = 'best_attacker_strats_bfs_' + str(self.n_battlefields) + '_atk_' + str(self.n_sol_attacker) + '_def_' + str(self.n_sol_defender) + '.csv'
+        else:
+            out_report_fname = 'best_defender_strats_bfs_' + str(self.n_battlefields) + '_atk_' + str(self.n_sol_attacker) + '_def_' + str(self.n_sol_defender) + '.csv'
+
+        print("Writing to {}".format(out_report_fname))
+        with open(out_report_fname, 'w') as out_f:
+            out_f.write("{}\n".format(','.join([""] + headers)))
+            for idx, strat in enumerate(best_n_strats):
+                row = [str(i) for i in strat]
+                out_f.write("{}\n".format(','.join(["Strategy " + str(idx + 1)] + row)))
 
     def get_payoff(self, lp_soln_A, lp_soln_D):
         payoff = None
@@ -329,12 +364,12 @@ class BlottoPayoffTable:
                     out_f.write("{}\n".format(','.join([a] + row)))
 
 
-# game_lp = BlottoLP(50,50,5)
+game_lp = BlottoLP(100,100,5)
 
-# gm_mtx = game_lp.game_matrix()
+gm_mtx = game_lp.game_matrix()
 #print(gm_mtx)
 
-# opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
+opt_A, opt_D = game_lp.lp_opt_sol(gm_mtx)
 # print('Attacker Optimal')
 # print(np.array(opt_A['x']).shape)
 # print(np.array(opt_A['x']).flatten().shape)
@@ -342,18 +377,20 @@ class BlottoPayoffTable:
 # print('Defender Optimal')
 # print(opt_D['x'])
 
-# print('Best 30 Strategies for Attacker')
-# best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
+print('Best 30 Strategies for Attacker')
+best_strats_A = game_lp.get_best_strats(opt_A['x'], 30, plr_type='attacker')
+#game_lp.disp_best_n_strats(best_strats_A)
+game_lp.save_bestNstrats2csv(best_strats_A)
 # print(best_strats_A)
 
 # print('Best 30 Strategies for Defender')
 # best_strats_D = game_lp.get_best_strats(opt_D['x'], 30, plr_type='defender')
 # print(best_strats_D)
 
-blotto_tbl = BlottoPayoffTable()
-payoff_mtx = blotto_tbl.gen_blotto_table()
+# blotto_tbl = BlottoPayoffTable()
+# payoff_mtx = blotto_tbl.gen_blotto_table()
 #blotto_tbl.disp_payoff_table(payoff_mtx)
-blotto_tbl.save_mtx2csv(payoff_mtx)
+# blotto_tbl.save_mtx2csv(payoff_mtx)
 
 
 
