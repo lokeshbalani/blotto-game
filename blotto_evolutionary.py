@@ -18,7 +18,6 @@
 # Hence Player-2 is the winner.
 #
 
-import sys
 import random
 import csv
 import operator as op
@@ -144,7 +143,6 @@ class Blotto:
             pl_strategy_score, strategy_score = self.compute_scores(pl_strategy,
                                                                     strategy)
             # Determine if given player strategy wins, draws, or loses
-            # print("strategy_score:", pl_strategy_score, "strategy_score:", strategy_score)
             if pl_strategy_score > strategy_score:
                 n_wins += 1
         return n_wins
@@ -171,10 +169,6 @@ class AttackerBot:
             self.player_strategies.append(strategy)
 
     def mutate(self, strategy):
-        # is_valid = False
-        # deploy_strategy = []
-
-        # while not is_valid:
         # Mutate the given strategy slightly
         deploy_strategy = list(strategy)
         # Pick a a number in [1,..,n_bfs] for number of mutations
@@ -188,7 +182,6 @@ class AttackerBot:
             if bfs_1 > 0:
                 deploy_strategy[rand_idx_1] -= 1
                 deploy_strategy[rand_idx_2] += 1
-            # is_valid = validate_strategy(strategy, self.unique_learning_strategies)
 
         return deploy_strategy
 
@@ -250,6 +243,7 @@ class AttackerBot:
             mutant_strategy = self.mutate(ranked_strategies[k][0])
         # Add some additional random strategies, for variety in the next generation
         self.add_strategies(add_count)
+
         return l_sorted_strategies
 
 
@@ -267,19 +261,11 @@ inp_n_soldiers = input("[User]: ")
 print("Input the Number of Battlefronts")
 inp_n_battlefronts = input("[User]: ")
 
-
 # Instantiate Game and Bot
 print("Creating Blotto Object ...\n")
 blotto_game = Blotto(inp_n_soldiers, inp_n_battlefronts)
 n_total_strategies = blotto_game.strategy_space_size
-
-if n_total_strategies < 200:
-    print("Strategy Space too small:", n_total_strategies)
-    sys.exit(0)
-
-# print("Total Number of Strategies possible:", n_total_strategies)
 l_strategy_space = blotto_game.create_complete_strategy_space()
-# for s in l_strategy_space: print(s)
 
 print("\nCreating AttackerBot Object")
 n_learning_strategies = 60
