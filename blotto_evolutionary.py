@@ -8,11 +8,9 @@
 # the most number soldiers at a battlefield wins that battlefield's points.
 # For 4 battlefield and 10 soldiers, this might look like:
 #
-#  Player 1's bets:   4   2   3   1
-#  ----------------------------------
-#  Battlefields:      1   2   3   4
-#  ----------------------------------
-#  Player 2's bets:   0   0   2   8
+#  Player 1's bets (Attacker) :   4   2   3   1
+#  --------------------------------------------
+#  Player 2's bets (Defender) :   0   0   2   8
 #
 #
 # Player 1 is assigned a score of 3, because the player won 3 battlefields.
@@ -25,7 +23,9 @@
 #
 
 import random
-import os
+import operator as op
+from collections import defaultdict
+from functools import reduce
 
 
 class Blotto:
@@ -35,137 +35,125 @@ class Blotto:
         """ Set the number of soldiers available and the number of battlefields """
         self.n_soldiers = int(n_sol)
         self.n_battlefields = int(n_bfs)
-        self.train_data = None
-        self.r_dataset = self.random_strategy_set(5000)
-        self.dataset = self.prepare_dataset(["./dataset/bf_strategies_1.csv",
-                                             "./dataset/bf_strategies_2.csv"])
+        self.master_dataset = []
+        self.unique_strategies = defaultdict(list)
+        self.unique_strategies_count = 0
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
-        # print("--------------------------------")
-        # print("Random Generated Dataset")
-        # print("--------------------------------")
-        # for i in range(len(self.r_dataset)):
-        #     print("Strategy #{} : {}".format(i + 1, self.r_dataset[i]))
+    def compute_strategy_space_size(self):
+        n = self.n_soldiers + self.n_battlefields - 1
+        k = self.n_battlefields - 1
+        r = min(k, n - k)
+        N = reduce(op.mul, range(n, n - r, -1), 1)
+        D = reduce(op.mul, range(1, r + 1), 1)
+        return N // D
 
-        # print("--------------------------------")
-        # print("Five Thirty Eight Dataset")
-        # print("--------------------------------")
-        # for i in range(len(self.dataset)):
-        #     print("Strategy #{} : {}".format(i + 1, self.dataset[i]))
-
-
-    def prepare_dataset(self,
-                        dir_list):
-        dataset = []
-        for path in dir_list:
-            for line in self.read_dataset(path):
-                sol = [int(float(item)) for item in line.split(",")]
-                if sum(sol) == self.n_soldiers:
-                    dataset.append(sol)
-        return dataset
-
-    # Reads in the given file and creates a list of betting selections from the data
-    @staticmethod
-    def read_dataset(dataset_path):
-        data = []
-        with open(dataset_path, "r", encoding="utf-8") as file:
-            for line in file.readlines()[1:]:
-                data.append(line)
-        return data
-
-    # Create a single random integer-valued strategy that sums to 
-    # No of soldiers with length equal to number of battlefields
-    def random_strategy(self):
-        # Create a random resource variable
-        res = self.n_soldiers
-
-        # Empty list for list of strategies
-        strategy = []
-
-        for i in range(self.n_battlefields - 1):
-            # Fill each position in strategy with a random number 
-            # between 0 and remaining reserves
-            rand = random.randint(0, res)
-            # add this to the strategy
-            strategy.append(rand)
-            # Reduce reserves by the allocated number
-            res -= rand
-
-        # Add any remaining reserves at the last
-        strategy.append(res)
-
+    def validate_strategy(self, strategy):
+        is_valid = False
         # Validate the strategies
         assert sum(strategy) == self.n_soldiers
+        # verify the strategy string
+        value_str = ""
+        for value in strategy:
+            value_str += str(value) + "_"
+        value_str = value_str[:-1]
+        value_str_len = len(value_str)
 
-        # Shuffle the strategies and return
-        random.shuffle(strategy)
+        # check for the uniqueness of the strategy string and append if unique
+        if value_str_len in self.unique_strategies.keys():
+            if value_str not in self.unique_strategies[value_str_len]:
+                self.unique_strategies[value_str_len].append(value_str)
+                is_valid = True
+        else:
+            self.unique_strategies[value_str_len] = [value_str]
+            is_valid = True
+
+        return is_valid
+
+    # Create a single random integer-valued strategy that sums to
+    # No of soldiers with length equal to number of battlefields
+    def create_strategy(self):
+        # Default validity of the strategy created
+        is_valid = False
+
+        # run the loop until we get a valid unique strategy
+        while not is_valid:
+            # Create a random strategy
+            res = self.n_soldiers
+            # Empty list for list of strategies
+            strategy = []
+
+            for i in range(self.n_battlefields - 1):
+                # Fill each position in strategy with a random number
+                # between 0 and remaining reserves
+                rand = random.randint(0, res)
+                # add this to the strategy
+                strategy.append(rand)
+                # Reduce reserves by the allocated number
+                res -= rand
+
+            # Add any remaining reserves at the last
+            strategy.append(res)
+            # Shuffle the strategies and return
+            random.shuffle(strategy)
+
+            # Validate the strategy
+            is_valid = self.validate_strategy(strategy)
+
         return strategy
 
-    def random_strategy_set(self,
-                            n_strategies):
+    def create_complete_strategy_space(self):
+        size = self.compute_strategy_space_size()
+        l_all_strategies = self.create_strategy_space(size)
+        return l_all_strategies
+
+    def create_strategy_space(self,
+                              n_strategies):
         # Empty list for storing list of strategies
         strategy_set = []
         # Keep going until we put n_strategies in strategy set
         while len(strategy_set) < n_strategies:
-            strategy_set.append(self.random_strategy())
+            strategy_set.append(self.create_strategy())
         return strategy_set
 
-    def player_scores(self,
-                      player1_strategy,
-                      player2_strategy):
-        # Determine which player wins each battlefield. If each player has 
-        # attacked with the same number of soldiers, battlefield is won by
-        # neither
-        p1_score = 0
-        p2_score = 0
-
+    def compute_scores(self,
+                       player_1_strategy,
+                       player_2_strategy):
+        # Determine which player wins each battlefield.
+        # number_of_soldiers(Attacker) > number_of_soldiers(Defender)
+        #     Attacker wins
+        # Otherwise
+        #     Defender wins
+        player_1_score = 0
+        player_2_score = 0
         # Assign scores
         for i in range(0, self.n_battlefields):
-            if player1_strategy[i] > player2_strategy[i]:
-                p1_score += (i + 1)
-            elif player2_strategy[i] > player1_strategy[i]:
-                p2_score += (i + 1)
-        return p1_score, p2_score
+            if player_1_strategy[i] > player_2_strategy[i]:
+                player_1_score += 1
+            else:
+                player_2_score += 1
+        return player_1_score, player_2_score
 
-    def pl_strategy_stats(self,
-                          pl_strategy,
-                          dataset):
-        # Calculates wins losses and ties that a strategy achieves
+    def get_strategy_stats(self,
+                           pl_strategy):
+        # Calculates wins / losses that a strategy achieves
         # when compared against every selection in dataset
         #
         # Params:
         #   strategy : the strategy to compare
         #   dataset : pruned subset of valid strategy space for the game
         # Returns:  
-        #   tuple : (no_of_wins, no_of_ties, no_of_losses)
+        #   tuple : (no_of_wins, no_of_losses)
         #
         n_wins = 0
-        n_losses = 0
-        n_ties = 0
-
-        for strategy in dataset:
-            pl_strategy_score, strategy_score = self.player_scores(pl_strategy,
-                                                                   strategy)
+        for strategy in self.master_dataset:
+            pl_strategy_score, strategy_score = self.compute_scores(pl_strategy,
+                                                                    strategy)
             # Determine if given player strategy wins, draws, or loses
             if pl_strategy_score > strategy_score:
                 n_wins += 1
-            elif pl_strategy_score < strategy_score:
-                n_losses += 1
-            else:
-                n_ties += 1
-        return n_wins, n_ties, n_losses
-
-    @staticmethod
-    def calc_final_score(strategy_stats):
-        # Score-calculating function that assigns appropriate score
-        # (5pts for a win, 2 for a tie, 0 for a loss)
-        # 
-        # Params:
-        #   strategy_stats : tuple (no_of_wins, no_of_ties, no_of_losses)
-        # Return:
-        #   number : score for the strategy
-        return 3 * strategy_stats[0] + 2 * strategy_stats[1]
+        return n_wins
 
     @staticmethod
     def duplicate_strat(self, strat):
@@ -206,24 +194,22 @@ class Blotto:
 class Bot:
     def __init__(self, blotto_game):
         self.game = blotto_game
-
         # Learning Strategy Space size
         self.n_players = 60
-        
         # Initialise strategies for players randomly
-        self.player_strats = blotto_game.random_strategy_set(self.n_players)
+        self.player_strategies = []
+        # print("Initial Player Strategies")
+        # for i in range(len(self.player_strats)):
+        #     print("Strategy #{} : {}".format(i + 1, self.player_strats[i]))
 
-        print("Initial Player Strategies")
-        for i in range(len(self.player_strats)):
-            print("Strategy #{} : {}".format(i + 1, self.player_strats[i]))
+    def create_learning_strategy_space(self):
 
-    def calc_pl_score(self, pl_strat):
-        return self.game.calc_final_score(self.game.pl_strategy_stats(pl_strat, self.game.r_dataset))
+    def calc_strategy_score(self, player_strategy):
+        return self.game.get_strategy_stats(player_strategy)
 
-    def pl_strat_sorted(self):
-        pl_scores = [(pl_strat, self.calc_pl_score(pl_strat)) for pl_strat in self.player_strats]
-
-        return sorted(pl_scores, key= lambda pl_score: pl_score[1], reverse=True)
+    def sorted_strategies(self):
+        strategy_scores = [(pl_strat, self.calc_strategy_score(pl_strat)) for pl_strat in self.player_strategies]
+        return sorted(strategy_scores, key=lambda strategy_score: strategy_score[1], reverse=True)
 
     def pl_strat_update(self):
         # Creates the next generation of strategies 
@@ -234,8 +220,8 @@ class Bot:
         # another third is composed of mutants of the top third, 
         # and the final third is composed of random selections
 
-        # Player Straties ranked by score
-        pl_strat_ranking = self.pl_strat_sorted()
+        # Player Strategies ranked by score
+        pl_strat_ranking = self.sorted_strategies()
 
         # Populate a new generation
         next_gen_pl = []
@@ -252,7 +238,7 @@ class Bot:
             mutant_strat = self.game.mutation(pl_strat_ranking[i][0])
             next_gen_pl.append(mutant_strat)
 
-        self.player_strats = next_gen_pl        
+        self.player_strats = next_gen_pl
 
 
 print("Input the Number of Soldiers")
@@ -260,13 +246,19 @@ inp_n_soldiers = input("[User]: ")
 print("Input the Number of Battlefronts")
 inp_n_battlefronts = input("[User]: ")
 
+
 # Instantiate Game and Bot
 blotto_game = Blotto(inp_n_soldiers, inp_n_battlefronts)
-bot = Bot(blotto_game)
+n_total_strategies = blotto_game.compute_strategy_space_size()
+print("Total Number of Strategies possible:", n_total_strategies)
+l_strategy_space = blotto_game.create_complete_strategy_space()
+# for s in l_strategy_space: print(s)
+# print("Total:", len(l_strategy_space))
+# bot = Bot(blotto_game)
 
+"""
 # Run 1000 iterations
 for idx in range(1):
-
     # Print generation number
     print("Generation #{}".format(idx))
 
@@ -277,7 +269,7 @@ for idx in range(1):
     # the current generation/iteration
     curr_best_strat = bot.player_strats[0]
     print("Current Best Strategy: {}".format(curr_best_strat))    
-    curr_strat_stats = blotto_game.pl_strategy_stats(curr_best_strat, blotto_game.r_dataset)
+    curr_strat_stats = blotto_game.pl_strategy_stats(curr_best_strat, blotto_game.master_dataset)
     print("Current Best Strategy Performance Stats")
     print("---------------------------------------")
     print("Wins: {}".format(curr_strat_stats[0]))
@@ -288,12 +280,11 @@ for idx in range(1):
 
 best_strat = bot.player_strats[0]
 print("Best Strategy: {}".format(best_strat))    
-strat_stats = blotto_game.pl_strategy_stats(best_strat, blotto_game.r_dataset)
+strat_stats = blotto_game.pl_strategy_stats(best_strat, blotto_game.master_dataset)
 print("Best Strategy Performance Stats")
 print("---------------------------------------")
 print("Wins: {}".format(strat_stats[0]))
 print("Ties: {}".format(strat_stats[1]))
 print("Losses: {}".format(strat_stats[2]))
 print("Best Strategy Score: {}".format(blotto_game.calc_final_score(strat_stats)))
-
-
+"""
