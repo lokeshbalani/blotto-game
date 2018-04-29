@@ -2,26 +2,27 @@
 #
 # A simulator for a Weighted Colonel Blotto game that is played as follows:
 #
-# We are given battlefields labelled 1-n, and we say that the battlefield's
-# label is its value. Two players present attack strategies given
-# a fixed number of soldiers, deciding how many soldiers they want
-# to send to every battlefield. Once the bets are compared, the player with
-# the most soldiers at a battlefield wins that battlefield's points. For 4
-# battlefield and 10 soldiers, this might look like:
-#
+# We are given battlefields labelled 1-n, and we assume that each battlefield has the same value.
+# Two players present attack strategies given a fixed number of soldiers, deciding how many
+# soldiers they want to send to every battlefield. Once the bets are compared, the player with
+# the most number soldiers at a battlefield wins that battlefield's points.
+# For 4 battlefield and 10 soldiers, this might look like:
 #
 #  Player 1's bets:   4   2   3   1
 #  ----------------------------------
 #  Battlefields:      1   2   3   4
 #  ----------------------------------
-#  Player 2's bets:   0   0   5   5
+#  Player 2's bets:   0   0   2   8
 #
 #
-# In this case, Player 1 is assigned a score of 3, because the player
-# won the battlefields labelled 1 and 2. Player 2 scores 7 for winning the
-# other two battlefields and thus wins the game
+# Player 1 is assigned a score of 3, because the player won 3 battlefields.
+# Player 2 scores 1 for winning 1 Battlefield
+# Hence Player-2 is the winner.
 #
-# 
+# Without loss of generality here is how we are going to assign scores
+# Win - 5 points
+# Loose -
+#
 
 import random
 import os
@@ -41,17 +42,17 @@ class Blotto:
         print("#Soldiers : {}".format(self.n_soldiers))
         print("#Battlefields : {}".format(self.n_battlefields))
 
-        #print("--------------------------------")s
-        #print("Random Generated Dataset")
-        #print("--------------------------------")
-        #for i in range(len(self.r_dataset)):
-            #print("Strategy #{} : {}".format(i + 1, self.r_dataset[i]))
+        # print("--------------------------------")
+        # print("Random Generated Dataset")
+        # print("--------------------------------")
+        # for i in range(len(self.r_dataset)):
+        #     print("Strategy #{} : {}".format(i + 1, self.r_dataset[i]))
 
-        #print("--------------------------------")
-        #print("Five Thirty Eight Dataset")
-        #print("--------------------------------")
-        #for i in range(len(self.dataset)):
-            #print("Strategy #{} : {}".format(i + 1, self.dataset[i]))
+        # print("--------------------------------")
+        # print("Five Thirty Eight Dataset")
+        # print("--------------------------------")
+        # for i in range(len(self.dataset)):
+        #     print("Strategy #{} : {}".format(i + 1, self.dataset[i]))
 
 
     def prepare_dataset(self,
@@ -166,6 +167,7 @@ class Blotto:
         #   number : score for the strategy
         return 3 * strategy_stats[0] + 2 * strategy_stats[1]
 
+    @staticmethod
     def duplicate_strat(self, strat):
         cp_strat = []
 
@@ -177,7 +179,7 @@ class Blotto:
     def mutation(self, strat):
         # Mutates given selection slightly, 
         # by decrementing one bet and incrementing
-        # another up to 10 times, selecred randomly
+        # another up to 10 times, selected randomly
 
         deploy_strat = self.duplicate_strat(strat)
 
@@ -199,6 +201,7 @@ class Blotto:
                 deploy_strat[rand_idx_2] += 1
 
         return deploy_strat
+
 
 class Bot:
     def __init__(self, blotto_game):
