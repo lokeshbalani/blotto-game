@@ -223,7 +223,7 @@ class Bot:
     def pl_strat_sorted(self):
         pl_scores = [(pl_strat, self.calc_pl_score(pl_strat)) for pl_strat in self.player_strats]
 
-        return sorted(pl_scores, key= lambda pl_score: pl_score[1])
+        return sorted(pl_scores, key= lambda pl_score: pl_score[1], reverse=True)
 
     def pl_strat_update(self):
         # Creates the next generation of strategies 
